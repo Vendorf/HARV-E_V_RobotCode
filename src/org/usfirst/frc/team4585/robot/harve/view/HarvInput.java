@@ -22,7 +22,7 @@ public class HarvInput {
 		flightStick.updateFlightStick();
 	}
 	
-	public double getJoystickInput(Axsis axsis){
+	public double getJoystickInput(Axis axsis){
 		return flightStick.getInput(axsis);
 	}
 	

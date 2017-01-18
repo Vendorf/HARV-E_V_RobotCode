@@ -15,11 +15,11 @@ public class FlightStick {
 	private double curveY;
 	private double curveZ;
 	
-	private double magX;
+	private double magX; //magnitude of an axis
 	private double magY;
 	private double magZ;
 	
-	private double pMagX;
+	private double pMagX; //previous or raw input of an axis
 	private double pMagY;
 	private double pMagZ;
 	
@@ -81,11 +81,10 @@ public class FlightStick {
 			magX = ((magX0 + magX1)/2) * Math.abs(magX);// get unit circle values to make sure both things added together can only = one
 			magY = ((magY0 + magY1)/2) * Math.abs(magY);// then multiply them by their original value to give it controller accuracy or place in the unit circle instead of on the edge.
 			magZ = ((magZ0 + magZ1)/2) * Math.abs(magZ);
-			
 		}
 	}
 	
-	public double getInput(Axsis axsis){
+	public double getInput(Axis axsis){
 		double magnitude = 0;
 		switch(axsis){
 		case X:magnitude = magX;
