@@ -25,7 +25,11 @@ public class HarvController{
 	public void operatorControl() {
 		input.makeRound(true);
 		input.update();
-		drive.updateDrive(input.getJoystickInput(Axsis.X), input.getJoystickInput(Axsis.Y), input.getJoystickInput(Axsis.Z));
+		magX = input.getJoystickInput(Axsis.X);
+		magY = input.getJoystickInput(Axsis.Y);
+		magRot = input.getJoystickInput(Axsis.Z);
+		
+		drive.updateDrive(magX, magY, magRot);
 	}
 	
 	public void test() {

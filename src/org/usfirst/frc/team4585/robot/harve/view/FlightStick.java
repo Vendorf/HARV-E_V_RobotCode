@@ -19,6 +19,10 @@ public class FlightStick {
 	private double magY;
 	private double magZ;
 	
+	private double pMagX;
+	private double pMagY;
+	private double pMagZ;
+	
 	private boolean isSquare;
 		
 	Joystick joyStick;
@@ -48,26 +52,36 @@ public class FlightStick {
 	}
 	
 	public void updateFlightStick(){ // need to set values so they can be used to turn them into round inputs instead of square
-		magX = joyStick.getX();
-		if(!(magX <= deadzoneX && magX>= -deadzoneX))
-			magX = Math.copySign(Math.pow((Math.abs(magX) - deadzoneX) * coeffX, curveX), magX);//make sure magnitude is same signed as it whent in then subtract the deadzone then multily it by the coefficiant then power it by the curv
+		pMagX = joyStick.getX();
+		if(!(pMagX <= deadzoneX && pMagX>= -deadzoneX))
+			magX = Math.copySign(Math.pow((Math.abs(pMagX) - deadzoneX) * coeffX, curveX), pMagX);//make sure magnitude is same signed as it whent in then subtract the deadzone then multily it by the coefficiant then power it by the curv
 		else
 			magX = 0;
-		magY = joyStick.getY();
-		if(!(magY <= deadzoneY && magY>= -deadzoneY))
-			magY = Math.copySign(Math.pow((Math.abs(magY) - deadzoneY) * coeffY, curveY), magY);
+		pMagY = joyStick.getY();
+		if(!(pMagY <= deadzoneY && pMagY>= -deadzoneY))
+			magY = Math.copySign(Math.pow((Math.abs(pMagY) - deadzoneY) * coeffY, curveY), pMagY);
 		else
 			magY = 0;
-		magZ = joyStick.getZ();
-		if(!(magZ <= deadzoneZ && magZ>= -deadzoneZ))
-			magZ = Math.copySign(Math.pow((Math.abs(magZ) - deadzoneZ) * coeffZ, curveZ), magZ);
-		else
+		pMagZ = joyStick.getZ();
+		if(!(pMagZ <= deadzoneZ && pMagZ>= -deadzoneZ))
+			magZ = Math.copySign(Math.pow((Math.abs(pMagZ) - deadzoneZ) * coeffZ, curveZ), pMagZ);
+		else 
 			magZ = 0;
 		//turning inputs round
 		if(!isSquare){
-			double angle = Math.atan2(magY, magX);
-			magX = Math.cos(angle) * Math.abs(magX);// get unit circle values to make sure both things added together can only = one
-			magY = Math.sin(angle) * Math.abs(magY);// then multiply them by their original value to give it controller accuracy or place in the unit circle instead of on the edge.
+			double angle0 = Math.atan2(magY, magX);
+			double angle1 = Math.atan2(magY, magZ);
+			double angle2 = Math.atan2(magZ, magX);
+			double magX0 = Math.cos(angle0);
+			double magX1 = Math.cos(angle2);
+			double magY0 = Math.sin(angle0);
+			double magY1 = Math.sin(angle1);
+			double magZ0 = Math.cos(angle1);
+			double magZ1 = Math.sin(angle2);
+			magX = ((magX0 + magX1)/2) * Math.abs(magX);// get unit circle values to make sure both things added together can only = one
+			magY = ((magY0 + magY1)/2) * Math.abs(magY);// then multiply them by their original value to give it controller accuracy or place in the unit circle instead of on the edge.
+			magZ = ((magZ0 + magZ1)/2) * Math.abs(magZ);
+			
 		}
 	}
 	

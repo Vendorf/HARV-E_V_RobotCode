@@ -14,15 +14,17 @@ public class MecanumDrive {
 				this.backLeft = new Spark(backLeft),
 				this.frontRight = new Spark(frontRight),
 				this.backRight = new Spark(backRight)};
+		wheelMotors[FRONTLEFT].setInverted(true);
+		wheelMotors[BACKLEFT].setInverted(true);
 		wheelSize = 0;
 		speed = 0;
 	}
 	
 	public void updateMotors(double magX, double magY, double magZ){
-		this.wheelMotors[FRONTLEFT].set(magY + magX - magZ);
-		this.wheelMotors[BACKLEFT].set(magY - magX  - magZ);
-		this.wheelMotors[FRONTRIGHT].set(magY - magX + magZ);
-		this.wheelMotors[BACKLEFT].set(magY + magX + magZ);
+		this.wheelMotors[FRONTLEFT].set(magY - magX - magZ);
+		this.wheelMotors[BACKLEFT].set(magY + magX  - magZ);
+		this.wheelMotors[FRONTRIGHT].set(magY + magX + magZ);
+		this.wheelMotors[BACKRIGHT].set(magY - magX + magZ);
 	}
 	 
 	public double getRotation(int wheel){
@@ -31,15 +33,15 @@ public class MecanumDrive {
 		return wheelRotation;
 	}
 	
-	public void setRotation(double mag, int wheel){
+	public void setWheelRotation(double mag, int wheel){
 		
 	}
 	
-	public void setPower(double mag, int wheel){
+	public void setWheelPower(double mag, int wheel){
 		
 	}
 	
-	public void setSpeed(double mag, int wheel){
+	public void setWheelSpeed(double mag, int wheel){
 		
 	}
 	
