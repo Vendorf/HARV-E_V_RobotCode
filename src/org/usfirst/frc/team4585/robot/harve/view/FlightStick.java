@@ -19,6 +19,16 @@ public class FlightStick {
 	private double magY;
 	private double magZ;
 	
+	double angle0;
+	double angle1;
+	double angle2;
+	double magX0;
+	double magX1;
+	double magY0;
+	double magY1;
+	double magZ0;
+	double magZ1;
+	
 	private double pMagX; //previous or raw input of an axis
 	private double pMagY;
 	private double pMagZ;
@@ -44,6 +54,15 @@ public class FlightStick {
 		this.magX = 0;
 		this.magY = 0;
 		this.magZ = 0;
+		this.angle0 = 0;
+		this.angle1 = 0;
+		this.angle2 = 0;
+		this.magX0 = 0;
+		this.magX1 = 0;
+		this.magY0 = 0;
+		this.magY1 = 0;
+		this.magZ0 = 0;
+		this.magZ1 = 0;
 	}
 	
 	public FlightStick(int chanel){
@@ -69,15 +88,15 @@ public class FlightStick {
 			magZ = 0;
 		//turning inputs round
 		if(!isSquare){
-			double angle0 = Math.atan2(magY, magX);
-			double angle1 = Math.atan2(magY, magZ);
-			double angle2 = Math.atan2(magZ, magX);
-			double magX0 = Math.cos(angle0);
-			double magX1 = Math.cos(angle2);
-			double magY0 = Math.sin(angle0);
-			double magY1 = Math.sin(angle1);
-			double magZ0 = Math.cos(angle1);
-			double magZ1 = Math.sin(angle2);
+			angle0 = Math.atan2(magY, magX);
+			angle1 = Math.atan2(magY, magZ);
+			angle2 = Math.atan2(magZ, magX);
+			magX0 = Math.cos(angle0);
+			magX1 = Math.cos(angle2);
+			magY0 = Math.sin(angle0);
+			magY1 = Math.sin(angle1);
+			magZ0 = Math.cos(angle1);
+			magZ1 = Math.sin(angle2);
 			magX = ((magX0 + magX1)/2) * Math.abs(magX);// get unit circle values to make sure both things added together can only = one
 			magY = ((magY0 + magY1)/2) * Math.abs(magY);// then multiply them by their original value to give it controller accuracy or place in the unit circle instead of on the edge.
 			magZ = ((magZ0 + magZ1)/2) * Math.abs(magZ);
