@@ -9,24 +9,24 @@ public class HarvController{
 	HarvDrive drive;
 	HarvInput input;
 	SmartDashboard dashboard;
+	Sensors sensors;
 	
 	double magX, magY, magRot;
 	double rotLimit;
 	double time;
-	
-	Gyroscope gyro;
-	
+		
 	public HarvController(){
 		drive = new HarvDrive(0,1,2,3);
 		input = new HarvInput(0);
 		dashboard =  new SmartDashboard();
-		//gyro = new Gyroscope();
+		sensors = new Sensors();
 		time = 0;
 	}
 	
 	public void robotInit() {
 		time = System.currentTimeMillis();
 		input.makeRound(true);
+		sensors.calibrateGyro();
 	}
 	
 	public void autonomous() {
@@ -34,7 +34,7 @@ public class HarvController{
 	}
 	
 	public void operatorControl() {
-		if(System.currentTimeMillis() > time + 0.001){
+		if(System.currentTimeMillis() > time + 20){
 			input.update();
 			magX = input.getJoystickInput(Axis.X);
 			magY = input.getJoystickInput(Axis.Y);
@@ -42,6 +42,11 @@ public class HarvController{
 			rotLimit = 1 -Math.abs(magY);
 //			//-(Math.pow((Math.abs(magY)-0.5),(1.0/3.0)) +1.2)/2.0 + 1.0;
 			magRot = magRot * Math.abs(rotLimit);
+			sensors.updateSPIAcceleration();
+			SmartDashboard.putNumber("YSpeed", sensors.getSpeedY());
+			SmartDashboard.putNumber("XSpeed", sensors.getSpeedX());
+			SmartDashboard.putNumber("Zspeed", sensors.getSpeedZ());
+			SmartDashboard.putNumber("Rotation in degrees", sensors.getAngle());
 			SmartDashboard.putNumber("horozontal", magX);
 			SmartDashboard.putNumber("vertical", magY);
 			SmartDashboard.putNumber("rotation", magRot);
