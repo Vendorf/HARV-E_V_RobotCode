@@ -19,10 +19,11 @@ public class Sensors {
 	
 	public Sensors(){ //default constructor
 		gyroscope = new ADXRS450_Gyro();
-		spiAccelerometer = new ADXL345_SPI(Port.kMXP, Accelerometer.Range.k2G);
+		spiAccelerometer = new ADXL345_SPI(Port.kMXP, Accelerometer.Range.k16G);
+		System.out.println(Accelerometer.Range.k16G.toString());
 		BIAccelerometer = new BuiltInAccelerometer();
 		accelerationList = new ArrayList<Double[]>();
-		accelerationSampleSize = 20;
+		accelerationSampleSize = 2;
 	}
 	
 	private double average(double[] numbs){
