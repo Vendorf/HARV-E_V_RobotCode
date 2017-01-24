@@ -48,17 +48,19 @@ public class HarvController {
 	private void agmentedDriveControl() {
 		final double rpm = 0;
 		final double rotationcoefficient = 8;
+		final double maxRotationLimit = 1;
 		final double skewTolerance = 4;
 		final double skewTolerancecoefficient = 1.00;
+		final double A = 1;
+		final double B = 1;
 		input.update();
 		magX = input.getJoystickInput(Axis.X);
 		magY = input.getJoystickInput(Axis.Y);
 		rotLimit = 1 - Math.abs(magY);
-		magRot = input.getJoystickInput(Axis.Z) * rotLimit;
-
-		degreesRotated += (magRot * rotationcoefficient);
-		double skew = Math.abs(degreesRotated - sensors.getAngle());
-
+		degreesRotated += input.getJoystickInput(Axis.Z) * maxRotationLimit;//Take input and turn it to intended degrees then make robot follow intended degrees.
+		
+		double skew = sensors.getAngle() - degreesRotated;
+		
 		if (degreesRotated > sensors.getAngle() * skewTolerancecoefficient - skewTolerance) magRot = magRot - (-skew / 30);
 		else if (degreesRotated < sensors.getAngle() * skewTolerancecoefficient + skewTolerance) magRot = magRot - (skew / 30);
 		else
