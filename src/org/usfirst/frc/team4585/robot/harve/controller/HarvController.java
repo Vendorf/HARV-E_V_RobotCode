@@ -21,7 +21,6 @@ public class HarvController {
 	long changeInTime;
 	double rotLimit;
 	double time;
-	double degreesToAim=0;
 
 	public HarvController() {
 		rotationSamples = new double[10];
@@ -70,8 +69,6 @@ public class HarvController {
 		final double maxAngularSpeed = 180;
 		
 		double degreesPerIteration=(maxAngularSpeed * millisBetweenIterations)/1000;
-		double skew;
-		double angularVelocity = 0;
 		double rotationCoefficient=.1;
 
 		input.update();
@@ -81,7 +78,9 @@ public class HarvController {
 		degreesRotated += input.getJoystickInput(Axis.Z) * rotLimit * degreesPerIteration;
 		
 		if(sensors.getAngle()-degreesRotated > skewTolerance)
-			magRot=(sensors.getAngle()-degreesRotated)*rotationCoefficient;
+			magRot=.25+(sensors.getAngle()-degreesRotated)*rotationCoefficient;
+		else
+			magRot = 0;
 
 	}
 
@@ -116,7 +115,7 @@ public class HarvController {
 			//// //-(Math.pow((Math.abs(magY)-0.5),(1.0/3.0)) +1.2)/2.0 + 1.0;
 			// magRot = magRot * Math.abs(rotLimit);
 
-			this.agmentedDriveControl();
+			this.newAugmentedDriveControl();
 
 			sensors.updateBIAcceleration();
 
