@@ -13,6 +13,8 @@ public class HarvController {
 	
 	final double millisBetweenIterations=20;
 
+	boolean isTurning=false;
+
 	double magX, magY, magRot;
 	double degreesRotated;
 	double rotationAcceleration;
@@ -44,7 +46,7 @@ public class HarvController {
 		}
 	}
 
-	private void agmentedDriveControl() {
+	private void augmentedDriveControl() {
 		final double rpm = 0;
 		final double rotationcoefficient = 8;
 		final double skewTolerance = 4;
@@ -57,16 +59,15 @@ public class HarvController {
 
 		degreesRotated += (magRot * rotationcoefficient);
 		double skew = Math.abs(degreesRotated - sensors.getAngle());
-
-		if (degreesRotated > sensors.getAngle() * skewTolerancecoefficient - skewTolerance) magRot = magRot - (-skew / 30);
-		else if (degreesRotated < sensors.getAngle() * skewTolerancecoefficient + skewTolerance) magRot = magRot - (skew / 30);
+		
+			if (degreesRotated > sensors.getAngle() * skewTolerancecoefficient - skewTolerance) magRot = magRot - (-skew / 30);
+			else if (degreesRotated < sensors.getAngle() * skewTolerancecoefficient + skewTolerance) magRot = magRot - (skew / 30);
 		else
-			;
+			magRot=0;
 	}
 
-	private void newAugmentedDriveControl() {
-		final double skewTolerance = 4;
-		final double maxAngularSpeed = 180;
+	private void degreeAugmentedDriveControl() {
+		final double maxAngularSpeed = 360;
 		
 		double degreesPerIteration=(maxAngularSpeed * millisBetweenIterations)/1000;
 		double rotationCoefficient=.1;
@@ -75,13 +76,24 @@ public class HarvController {
 		magX = input.getJoystickInput(Axis.X);
 		magY = input.getJoystickInput(Axis.Y);
 		rotLimit = 1 - Math.abs(magY);
+		
 		degreesRotated += input.getJoystickInput(Axis.Z) * rotLimit * degreesPerIteration;
 		
-		if(sensors.getAngle()-degreesRotated > skewTolerance)
-			magRot=.25+(sensors.getAngle()-degreesRotated)*rotationCoefficient;
-		else
-			magRot = 0;
+		magRot=-Math.copySign(Math.sqrt(Math.abs(sensors.getAngle()-degreesRotated)), sensors.getAngle()-degreesRotated)*rotationCoefficient;
 
+	}
+	private void pleaseDriveStraight(){
+		magX = input.getJoystickInput(Axis.X);
+		magY = input.getJoystickInput(Axis.Y);
+		rotLimit = 1 - Math.abs(magY);
+		magRot = input.getJoystickInput(Axis.Z) * rotLimit;
+		
+		if(magRot==0){
+			
+			
+			
+		}
+		
 	}
 
 	private void showInformation() {
@@ -115,7 +127,7 @@ public class HarvController {
 			//// //-(Math.pow((Math.abs(magY)-0.5),(1.0/3.0)) +1.2)/2.0 + 1.0;
 			// magRot = magRot * Math.abs(rotLimit);
 
-			this.newAugmentedDriveControl();
+			this.augmentedDriveControl();
 
 			sensors.updateBIAcceleration();
 
@@ -123,9 +135,8 @@ public class HarvController {
 			// if(magY!=0) magRot = Math.copySign(Math.abs(magRot) *
 			// (0.25/(Math.abs(magY)+.1)), magRot);
 			time = System.currentTimeMillis();
-			
-			drive.updateDrive(magX, magY, magRot);
-		}
+		}	
+	drive.updateDrive(magX, magY, magRot);		
 	}
 	public void test() {
 	}
