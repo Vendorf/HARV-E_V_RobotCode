@@ -11,20 +11,29 @@ public class HarvController {
 	SmartDashboard dashboard;
 	Sensors sensors;
 	
-	final double millisBetweenIterations=20;
 
 	double magX, magY, magRot;
 	double degreesRotated;
 	double rotationAcceleration;
-	double[] rotationSamples;
 	int currentSample;
 	long changeInTime;
 	double rotLimit;
 	double time;
 	double degreesToAim=0;
+	// variables for rotation controll
+	final double millisPerIteration=20;
+	double timeRotating;
+	double angleDifference;
+	double intendedDegrees;
+	double maxRotationPerIteration;
+	double rps; //rotations per second
+	double[][] rotationSamples;//taking current rotation and current time
+	
 
 	public HarvController() {
-		rotationSamples = new double[10];
+		rps = 2;
+		maxRotationPerIteration = rps * 360 * (millisPerIteration / 1000);
+		rotationSamples = new double[10][2];
 		currentSample = 0;
 		changeInTime = 0;
 		drive = new HarvDrive(0, 1, 2, 3);
@@ -39,39 +48,42 @@ public class HarvController {
 																// calibrating
 																// robot
 		if (time + 40 < System.currentTimeMillis() && currentSample < 10) {
-			rotationSamples[currentSample] = sensors.getAngle();
+			rotationSamples[currentSample][0] = sensors.getAngle();
 			currentSample += 1;
 			changeInTime += System.currentTimeMillis() - time;
 		}
 	}
 
 	private void agmentedDriveControl() {
-		final double rpm = 0;
-		final double rotationcoefficient = 8;
-		final double maxRotationLimit = 1;
+		final double angleToMagnitude = 3;
 		final double skewTolerance = 4;
-		final double skewTolerancecoefficient = 1.00;
-		final double A = 1;
-		final double B = 1;
-		input.update();
+		final double B = 6,D = -0.3;//D shifts the graph over into a usable range
+		final double A = 1.2;
+		double rotationValue;
 		magX = input.getJoystickInput(Axis.X);
 		magY = input.getJoystickInput(Axis.Y);
-		rotLimit = 1 - Math.abs(magY);
-		degreesRotated += input.getJoystickInput(Axis.Z) * maxRotationLimit;//Take input and turn it to intended degrees then make robot follow intended degrees.
+		rotLimit = 1-Math.abs(magY);
+		angleDifference = intendedDegrees - sensors.getAngle();
+		intendedDegrees = (Math.abs(input.getJoystickInput(Axis.Z)) * 1)/ (1+ A * Math.pow(Math.E,-B * (timeRotating + D)));
+		//test line of code to try and have a nice acceleration curve( y = c/1+aE^-bx) might be better to have angle difference factored into c
+		rotationValue = ( 1 * Math.abs(input.getJoystickInput(Axis.Z))+0.1/ (1+ A * Math.pow(Math.E,-1 * (timeRotating + D-0.1))));
+		if(input.getJoystickInput(Axis.Z) < 0 && angleDifference < 0 - skewTolerance){
+			timeRotating += millisPerIteration;
+			magRot = -rotationValue;
+		}
+		else if(input.getJoystickInput(Axis.Z) > 0 && angleDifference > 0 + skewTolerance){
+			timeRotating += millisPerIteration;
+			magRot = rotationValue;
+		}
+		else timeRotating -= millisPerIteration * 2;
 		
-		double skew = sensors.getAngle() - degreesRotated;
-		
-		if (degreesRotated > sensors.getAngle() * skewTolerancecoefficient - skewTolerance) magRot = magRot - (-skew / 30);
-		else if (degreesRotated < sensors.getAngle() * skewTolerancecoefficient + skewTolerance) magRot = magRot - (skew / 30);
-		else
-			;
 	}
 
 	private void newAugmentedDriveControl() {
 		final double skewTolerance = 4;
 		final double maxAngularSpeed = 180;
 		
-		double degreesPerIteration=(maxAngularSpeed * millisBetweenIterations)/1000;
+		double degreesPerIteration=(maxAngularSpeed * millisPerIteration)/1000;
 		double skew;
 		double angularVelocity = 0;
 		double rotationCoefficient=.1;
@@ -109,7 +121,7 @@ public class HarvController {
 	}
 
 	public void operatorControl() {
-		if (System.currentTimeMillis() >= time + millisBetweenIterations) {
+		if (System.currentTimeMillis() >= time + millisPerIteration) {
 			// input.update();
 			// magX = input.getJoystickInput(Axis.X);
 			// magY = input.getJoystickInput(Axis.Y);
