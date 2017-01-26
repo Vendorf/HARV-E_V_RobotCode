@@ -31,7 +31,7 @@ public class HarvController {
 	
 
 	public HarvController() {
-		rps = 2;
+		rps = 1;
 		maxRotationPerIteration = rps * 360 * (millisPerIteration / 1000);
 		rotationSamples = new double[10][2];
 		currentSample = 0;
@@ -54,29 +54,36 @@ public class HarvController {
 		}
 	}
 
-	private void agmentedDriveControl() {
+	private void augmentedDriveControl() {
 		final double angleToMagnitude = 3;
-		final double skewTolerance = 4;
-		final double B = 6,D = -0.3;//D shifts the graph over into a usable range
-		final double A = 1.2;
+		final double skewTolerance = 3;
+		final double motorDeadzone = 0.14;
+		final double B = 1.2;
+		final double D = 0.008;//scalar for the rotation value to make sure it is below 1
+		final double A = .90;//scalar for how fast the robot actualy turns under user controll
+		final double C = 1.6;
 		double rotationValue;
 		magX = input.getJoystickInput(Axis.X);
 		magY = input.getJoystickInput(Axis.Y);
 		rotLimit = 1-Math.abs(magY);
-		angleDifference = intendedDegrees - sensors.getAngle();
-		intendedDegrees = (Math.abs(input.getJoystickInput(Axis.Z)) * 1)/ (1+ A * Math.pow(Math.E,-B * (timeRotating + D)));
-		//test line of code to try and have a nice acceleration curve( y = c/1+aE^-bx) might be better to have angle difference factored into c
-		rotationValue = ( 1 * Math.abs(input.getJoystickInput(Axis.Z))+0.1/ (1+ A * Math.pow(Math.E,-1 * (timeRotating + D-0.1))));
-		if(input.getJoystickInput(Axis.Z) < 0 && angleDifference < 0 - skewTolerance){
-			timeRotating += millisPerIteration;
-			magRot = -rotationValue;
+		angleDifference = sensors.getAngle() - intendedDegrees;
+		intendedDegrees += input.getJoystickInput(Axis.Z) * maxRotationPerIteration * rotLimit * B;
+		rotationValue = Math.abs((angleDifference * D)) + 0.16;
+		if(input.getJoystickInput(Axis.Z) < 0 - motorDeadzone || input.getJoystickInput(Axis.Z) > 0 + motorDeadzone){
+			magRot = (input.getJoystickInput(Axis.Z) * rotLimit * A) * (rotationValue *C + 1);
 		}
-		else if(input.getJoystickInput(Axis.Z) > 0 && angleDifference > 0 + skewTolerance){
-			timeRotating += millisPerIteration;
-			magRot = rotationValue;
+		else if( angleDifference < 0 - skewTolerance){
+			timeRotating += millisPerIteration/1000;
+			magRot = Math.abs(rotationValue);
 		}
-		else timeRotating -= millisPerIteration * 2;
-		
+		else if(angleDifference > 0 + skewTolerance){
+			timeRotating += millisPerIteration/1000;
+			magRot = -Math.abs(rotationValue);
+		}
+		else{
+			timeRotating = 0;
+			magRot = 0;
+		}
 	}
 
 	private void newAugmentedDriveControl() {
@@ -100,14 +107,16 @@ public class HarvController {
 	}
 
 	private void showInformation() {
-		SmartDashboard.putNumber("intended rotation", this.degreesRotated);
+		SmartDashboard.putNumber("intended rotation", this.intendedDegrees);
 		SmartDashboard.putNumber("YSpeed", sensors.getSpeedY());
 		SmartDashboard.putNumber("XSpeed", sensors.getSpeedX());
 		SmartDashboard.putNumber("Zspeed", sensors.getSpeedZ());
 		SmartDashboard.putNumber("Rotation in degrees", (int) sensors.getAngle());
-		SmartDashboard.putNumber("horozontal", magX);
-		SmartDashboard.putNumber("vertical", magY);
-		SmartDashboard.putNumber("rotation", magRot);
+		SmartDashboard.putNumber("horozontal magnitude", magX);
+		SmartDashboard.putNumber("vertical magnitude", magY);
+		SmartDashboard.putNumber("rotation magnitude", magRot);
+		SmartDashboard.putNumber("time rotating", this.timeRotating);
+		SmartDashboard.putNumber("input rotation", input.getJoystickInput(Axis.Z));
 	}
 
 	public void robotInit() {
@@ -122,7 +131,7 @@ public class HarvController {
 
 	public void operatorControl() {
 		if (System.currentTimeMillis() >= time + millisPerIteration) {
-			// input.update();
+			input.update();
 			// magX = input.getJoystickInput(Axis.X);
 			// magY = input.getJoystickInput(Axis.Y);
 			// magRot = input.getJoystickInput(Axis.Z);//z=log3(y-0.5)-2.2/2
@@ -130,7 +139,7 @@ public class HarvController {
 			//// //-(Math.pow((Math.abs(magY)-0.5),(1.0/3.0)) +1.2)/2.0 + 1.0;
 			// magRot = magRot * Math.abs(rotLimit);
 
-			this.agmentedDriveControl();
+			this.augmentedDriveControl();
 
 			sensors.updateBIAcceleration();
 
