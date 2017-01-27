@@ -2,6 +2,8 @@ package org.usfirst.frc.team4585.robot.harve.controller;
 
 import edu.wpi.first.wpilibj.smartdashboard.*;
 import org.usfirst.frc.team4585.robot.harve.model.*;
+import org.usfirst.frc.team4585.robot.harve.model.drive.HarvDrive;
+import org.usfirst.frc.team4585.robot.harve.model.drive.MecanumDrive;
 import org.usfirst.frc.team4585.robot.harve.view.*;
 import java.time.Clock;;
 
@@ -39,7 +41,6 @@ public class HarvController {
 		drive = new MecanumDrive(0, 1, 2, 3);
 		input = new HarvInput(0);
 		dashboard = new SmartDashboard();
-		degreesRotated = 0;
 		sensors = new Sensors();
 		time = 0;
 	}
@@ -53,6 +54,13 @@ public class HarvController {
 			changeInTime += System.currentTimeMillis() - time;
 		}
 	}
+	
+	private void findIntendedDegrees(){
+		final double A = 1.07;
+		final double B = 2.07;
+		intendedDegrees += Math.copySign(Math.pow(B,Math.abs((input.getJoystickInput(Axis.Z) * rotLimit))) + 1.07,input.getJoystickInput(Axis.X));//  * maxRotationPerIteration;
+		
+	}
 
 
 	private void augmentedDriveControl() {
@@ -62,7 +70,7 @@ public class HarvController {
 		final double motorDeadzone = 0;
 		final double B = 1.2;
 		final double D = 0.008;//scalar for the rotation value to make sure it is below 1
-		final double A = 0.5;//scalar for how fast the robot turns under user controll
+		final double A = 2;//scalar for how fast the robot turns under user controll
 		final double C = 1.6;
 		double rotationValue = 0.5;
 		magX = input.getJoystickInput(Axis.X);
@@ -70,7 +78,9 @@ public class HarvController {
 		rotLimit = 1-Math.abs(magY);
 		
 		angleDifference = sensors.getAngle() - intendedDegrees;
-		intendedDegrees += Math.pow((input.getJoystickInput(Axis.Z) * rotLimit) * maxRotationPerIteration, A);//power to curve for acceleration
+		
+		this.findIntendedDegrees();
+		
 		rotationValue = Math.abs((angleDifference * D)) + 0.16;//this is where the problem is
 		
 		if(input.getJoystickInput(Axis.Z) < 0 - motorDeadzone || input.getJoystickInput(Axis.Z) > 0 + motorDeadzone){

@@ -1,4 +1,4 @@
-package org.usfirst.frc.team4585.robot.harve.model;
+package org.usfirst.frc.team4585.robot.harve.model.drive;
 
 import edu.wpi.first.wpilibj.Spark;
 
@@ -28,9 +28,9 @@ public class DefaultDrive extends HarvDrive{
 	
 	@Override
 	public void update(double magY, double magRot){
-		if(magY > 1)this.setMagY(1);
+		if(Math.abs(magY) > 1)this.setMagY(1);
 		else this.setMagY(magY);
-		if(magRot > 1)this.setMagRot(1);
+		if(Math.abs(magRot) > 1)this.setMagRot(1);
 		else this.setMagRot(magRot);
 		
 		leftSide.set(this.getMagY() - this.getMagRot());

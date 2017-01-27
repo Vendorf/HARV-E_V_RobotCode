@@ -1,4 +1,4 @@
-package org.usfirst.frc.team4585.robot.harve.model;
+package org.usfirst.frc.team4585.robot.harve.model.drive;
 
 import edu.wpi.first.wpilibj.Spark;
 
@@ -8,6 +8,7 @@ public class MecanumDrive extends HarvDrive{
 	Spark frontLeft, backLeft, frontRight, backRight;
 	float wheelSize;
 	double speed;
+	
 	public MecanumDrive(int frontLeft, int backLeft, int frontRight, int backRight){
 		super();
 		wheelMotors = new Spark[]{
@@ -21,10 +22,15 @@ public class MecanumDrive extends HarvDrive{
 		speed = 0;
 	}
 	
+	@Override
 	public void update(double magX, double magY, double magRot){
-		this.setMagX(magX);
-		this.setMagY(magY);
-		this.setMagRot(magRot);
+		if(magX > 1) this.setMagX(1);
+		else this.setMagX(magX);
+		if (magY > 1)this.setMagY(1);
+		else this.setMagY(magY);
+		if(magRot > 1) this.setMagRot(1);
+		else this.setMagRot(magRot);
+		
 		this.wheelMotors[FRONTLEFT].set(this.getMagY() - this.getMagX()- this.getMagRot());
 		this.wheelMotors[BACKLEFT].set(this.getMagY() + this.getMagX()  - this.getMagRot());
 		this.wheelMotors[FRONTRIGHT].set(this.getMagY() + this.getMagX() + this.getMagRot());
@@ -35,27 +41,7 @@ public class MecanumDrive extends HarvDrive{
 		double wheelRotation = 0;
 		
 		return wheelRotation;
-	}
-	
-	public void setWheelRotation(double mag, int wheel){
-		
-	}
-	
-	public void setWheelPower(double mag, int wheel){
-		
-	}
-	
-	public void setWheelSpeed(double mag, int wheel){
-		
-	}
-	
-	public void setWheelSize(float size){
-		
-	}
-	
-	public float getWheelSize(){
-		return this.wheelSize;
-	}
+	}	
 
 	@Override
 	public void update(double magY, double magRot) {

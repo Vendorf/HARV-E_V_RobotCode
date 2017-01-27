@@ -1,9 +1,11 @@
-package org.usfirst.frc.team4585.robot.harve.model;
+package org.usfirst.frc.team4585.robot.harve.model.drive;
 
 public abstract class HarvDrive {
 	private double magX;
 	private double magY;
 	private double magRot;
+	public double wheelSize;
+	public double speed;
 	public HarvDrive(){//default constructor
 		magX = 0;
 		magY = 0;
@@ -25,6 +27,18 @@ public abstract class HarvDrive {
 	
 	public double getMagRot(){
 		return this.magRot;
+	}
+	
+	public void setWheelSize(double wheelSize){
+		this.wheelSize = wheelSize;
+	}
+	
+	public double getWheelSize(){
+		return this.wheelSize;
+	}
+	
+	public double getSpeed(){
+		return this.speed;
 	}
 	
 	protected void setMagY(double magY){
