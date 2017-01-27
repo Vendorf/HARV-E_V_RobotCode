@@ -31,12 +31,12 @@ public class HarvController {
 
 	public HarvController() {
 		millisPerIteration = 20;
-		rps = 2;
+		rps = 1;
 		maxRotationPerIteration = 0;
 		rotationSamples = new double[10][2];
 		currentSample = 0;
 		changeInTime = 0;
-		drive = new HarvDrive(0, 1, 2, 3);
+		drive = new MecanumDrive(0, 1, 2, 3);
 		input = new HarvInput(0);
 		dashboard = new SmartDashboard();
 		degreesRotated = 0;
@@ -62,7 +62,7 @@ public class HarvController {
 		final double motorDeadzone = 0;
 		final double B = 1.2;
 		final double D = 0.008;//scalar for the rotation value to make sure it is below 1
-		final double A = 0.9;//scalar for how fast the robot actualy turns under user controll
+		final double A = 0.5;//scalar for how fast the robot turns under user controll
 		final double C = 1.6;
 		double rotationValue = 0.5;
 		magX = input.getJoystickInput(Axis.X);
@@ -142,7 +142,7 @@ public class HarvController {
 			sensors.updateBIAcceleration();
 			this.showInformation();
 			time = System.currentTimeMillis();
-			drive.updateDrive(magX, magY, magRot);
+			drive.update(magX, magY, magRot);
 		}
 	}
 	
