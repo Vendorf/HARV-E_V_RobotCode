@@ -30,10 +30,10 @@ public class HarvController {
 	private double timeRotating;
 
 	public HarvController() {
-		rps = 1;
-		maxRotationPerIteration = rps * 360 * (millisPerIteration / 1000);
-		rotationSamples = new double[10][2];
 		millisPerIteration = 20;
+		rps = 2;
+		maxRotationPerIteration = 0;
+		rotationSamples = new double[10][2];
 		currentSample = 0;
 		changeInTime = 0;
 		drive = new HarvDrive(0, 1, 2, 3);
@@ -56,56 +56,38 @@ public class HarvController {
 
 
 	private void augmentedDriveControl() {
+		maxRotationPerIteration = rps * 360 * (millisPerIteration / 1000);
 		final double angleToMagnitude = 3;
-		final double skewTolerance = 3;
-		final double motorDeadzone = 0.14;
+		final double skewTolerance = 2;
+		final double motorDeadzone = 0;
 		final double B = 1.2;
 		final double D = 0.008;//scalar for the rotation value to make sure it is below 1
-		final double A = .90;//scalar for how fast the robot actualy turns under user controll
+		final double A = 0.9;//scalar for how fast the robot actualy turns under user controll
 		final double C = 1.6;
-		double rotationValue;
+		double rotationValue = 0.5;
 		magX = input.getJoystickInput(Axis.X);
 		magY = input.getJoystickInput(Axis.Y);
 		rotLimit = 1-Math.abs(magY);
+		
 		angleDifference = sensors.getAngle() - intendedDegrees;
-		intendedDegrees += input.getJoystickInput(Axis.Z) * maxRotationPerIteration * rotLimit * B;
-		rotationValue = Math.abs((angleDifference * D)) + 0.16;
+		intendedDegrees += Math.pow((input.getJoystickInput(Axis.Z) * rotLimit) * maxRotationPerIteration, A);//power to curve for acceleration
+		rotationValue = Math.abs((angleDifference * D)) + 0.16;//this is where the problem is
+		
 		if(input.getJoystickInput(Axis.Z) < 0 - motorDeadzone || input.getJoystickInput(Axis.Z) > 0 + motorDeadzone){
-			magRot = (input.getJoystickInput(Axis.Z) * rotLimit * A) * (rotationValue *C + 1);
+			magRot = (input.getJoystickInput(Axis.Z) * rotLimit) * (rotationValue + 1);
 		}
 		else if( angleDifference < 0 - skewTolerance){
 			timeRotating += millisPerIteration/1000;
-			magRot = Math.abs(rotationValue);
+			magRot = Math.abs(rotationValue) * rotLimit;
 		}
 		else if(angleDifference > 0 + skewTolerance){
 			timeRotating += millisPerIteration/1000;
-			magRot = -Math.abs(rotationValue);
+			magRot = -Math.abs(rotationValue) * rotLimit;
 		}
 		else{
 			timeRotating = 0;
 			magRot = 0;
 		}
-	}
-
-	private void agmentedDriveControl() {
-		final double rpm = 0;
-		final double rotationcoefficient = 8;
-		final double skewTolerance = 4;
-		final double skewTolerancecoefficient = 1.00;
-		input.update();
-		magX = input.getJoystickInput(Axis.X);
-		magY = input.getJoystickInput(Axis.Y);
-		rotLimit = 1 - Math.abs(magY);
-		magRot = input.getJoystickInput(Axis.Z) * rotLimit;
-
-		degreesRotated += (magRot * rotationcoefficient);
-		double skew = Math.abs(degreesRotated - sensors.getAngle());
-
-		if (degreesRotated > sensors.getAngle() * skewTolerancecoefficient - skewTolerance) magRot = magRot - (-skew / 30);
-		else if (degreesRotated < sensors.getAngle() * skewTolerancecoefficient + skewTolerance) magRot = magRot - (skew / 30);
-		else
-			;
-		
 	}
 
 	private void newAugmentedDriveControl() {
@@ -130,6 +112,7 @@ public class HarvController {
 
 	private void showInformation() {
 		SmartDashboard.putNumber("intended rotation", this.intendedDegrees);
+		SmartDashboard.putNumber("angle difference", this.angleDifference);
 		SmartDashboard.putNumber("YSpeed", sensors.getSpeedY());
 		SmartDashboard.putNumber("XSpeed", sensors.getSpeedX());
 		SmartDashboard.putNumber("Zspeed", sensors.getSpeedZ());
@@ -153,30 +136,17 @@ public class HarvController {
 
 	public void operatorControl() {
 
-		if (System.currentTimeMillis() >= time + millisBetweenIterations) {
+		if (System.currentTimeMillis() >= time + millisPerIteration) {
 			input.update();
-			// magX = input.getJoystickInput(Axis.X);
-			// magY = input.getJoystickInput(Axis.Y);
-			// magRot = input.getJoystickInput(Axis.Z);//z=log3(y-0.5)-2.2/2
-			// rotLimit = 1 -Math.abs(magY);
-			//// //-(Math.pow((Math.abs(magY)-0.5),(1.0/3.0)) +1.2)/2.0 + 1.0;
-			// magRot = magRot * Math.abs(rotLimit);
-
-
 			this.augmentedDriveControl();
-
-			this.newAugmentedDriveControl();
-
 			sensors.updateBIAcceleration();
-
 			this.showInformation();
-			// if(magY!=0) magRot = Math.copySign(Math.abs(magRot) *
-			// (0.25/(Math.abs(magY)+.1)), magRot);
 			time = System.currentTimeMillis();
-			
 			drive.updateDrive(magX, magY, magRot);
 		}
 	}
+	
+	
 	public void test() {
 	}
 

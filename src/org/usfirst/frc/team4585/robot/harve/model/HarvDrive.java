@@ -15,9 +15,12 @@ public class HarvDrive {
 	
 	public void updateDrive(double magX, double magY, double magRot){
 		this.magX = magX;
+		if(magX > 1) this.magX = 1;
 		this.magY = magY;
+		if(magY > 1) this.magY =1;
 		this.magRot = magRot;
-		mecanumDrive.updateMotors(magX, magY, magRot);
+		if(magRot > 1) this.magRot = 1;
+		mecanumDrive.updateMotors(this.magX, this.magY, this.magRot);
 	}
 	
 	public void rotate(double magnitude){
