@@ -27,7 +27,7 @@ public class HarvController {
 	private double rps;
 	private double maxRotationPerIteration;
 	private double millisPerIteration;
-	private double intendedDegrees;
+	private double intendedAngle;
 	private double angleDifference;
 	private double timeRotating;
 
@@ -55,73 +55,47 @@ public class HarvController {
 		}
 	}
 	
-	private void findIntendedDegrees(){
-		final double A = 1.07;
-		final double B = 2.07;
-		intendedDegrees += Math.copySign(Math.pow(B,Math.abs((input.getJoystickInput(Axis.Z) * rotLimit))) + 1.07,input.getJoystickInput(Axis.X));//  * maxRotationPerIteration;
-		
+	private void findIntendedDegrees(){//this method tries to get intended degrees close to the actual degrees of the robot
+		final double A = 1;
+		final double B = 2;
+		final double C = 1.1;
+		double y = (Math.pow(B * C,Math.abs(input.getJoystickInput(Axis.Z))) - A);
+		if(y >0 + 0.111)
+			intendedAngle += Math.copySign(y, input.getJoystickInput(Axis.Z)) * this.maxRotationPerIteration;//exponent curve close to robots acceleration
+		else
+			intendedAngle += 0;
 	}
-
 
 	private void augmentedDriveControl() {
 		maxRotationPerIteration = rps * 360 * (millisPerIteration / 1000);
-		final double angleToMagnitude = 3;
-		final double skewTolerance = 2;
-		final double motorDeadzone = 0;
 		final double B = 1.2;
 		final double D = 0.008;//scalar for the rotation value to make sure it is below 1
 		final double A = 2;//scalar for how fast the robot turns under user controll
 		final double C = 1.6;
-		double rotationValue = 0.5;
+		final double skewTolerance = 1.8;
+		double rotationValue = Math.abs((angleDifference * D)) + 0.16;
 		magX = input.getJoystickInput(Axis.X);
 		magY = input.getJoystickInput(Axis.Y);
-		rotLimit = 1-Math.abs(magY);
+		rotLimit = 1-(Math.abs(magY)* 0.50);
 		
-		angleDifference = sensors.getAngle() - intendedDegrees;
+		angleDifference = sensors.getAngle() - intendedAngle;
 		
 		this.findIntendedDegrees();
-		
-		rotationValue = Math.abs((angleDifference * D)) + 0.16;//this is where the problem is
-		
-		if(input.getJoystickInput(Axis.Z) < 0 - motorDeadzone || input.getJoystickInput(Axis.Z) > 0 + motorDeadzone){
-			magRot = (input.getJoystickInput(Axis.Z) * rotLimit) * (rotationValue + 1);
-		}
-		else if( angleDifference < 0 - skewTolerance){
-			timeRotating += millisPerIteration/1000;
-			magRot = Math.abs(rotationValue) * rotLimit;
-		}
-		else if(angleDifference > 0 + skewTolerance){
-			timeRotating += millisPerIteration/1000;
-			magRot = -Math.abs(rotationValue) * rotLimit;
-		}
-		else{
-			timeRotating = 0;
+		rotationValue = Math.abs((angleDifference * D)) + 0.16;
+		if(input.getJoystickInput(Axis.Z) < 0|| input.getJoystickInput(Axis.Z) > 0){//detects if there is imput and sets magRot acordingly
+			magRot = (input.getJoystickInput(Axis.Z) * rotLimit);
+		}	
+		if(angleDifference < 0 - skewTolerance){// corrects based off the intended angle
+			magRot = Math.abs(rotationValue);
+		}else if( angleDifference > 0 + skewTolerance){
+			magRot = -Math.abs(rotationValue);
+		}else{
 			magRot = 0;
 		}
-	}
-
-	private void newAugmentedDriveControl() {
-		final double skewTolerance = 4;
-		final double maxAngularSpeed = 180;
-		
-		double degreesPerIteration=(maxAngularSpeed * millisBetweenIterations)/1000;
-		double rotationCoefficient=.1;
-
-		input.update();
-		magX = input.getJoystickInput(Axis.X);
-		magY = input.getJoystickInput(Axis.Y);
-		rotLimit = 1 - Math.abs(magY);
-		degreesRotated += input.getJoystickInput(Axis.Z) * rotLimit * degreesPerIteration;
-		
-		if(sensors.getAngle()-degreesRotated > skewTolerance)
-			magRot=.25+(sensors.getAngle()-degreesRotated)*rotationCoefficient;
-		else
-			magRot = 0;
-
 	}
 
 	private void showInformation() {
-		SmartDashboard.putNumber("intended rotation", this.intendedDegrees);
+		SmartDashboard.putNumber("intended rotation", this.intendedAngle);
 		SmartDashboard.putNumber("angle difference", this.angleDifference);
 		SmartDashboard.putNumber("YSpeed", sensors.getSpeedY());
 		SmartDashboard.putNumber("XSpeed", sensors.getSpeedX());
