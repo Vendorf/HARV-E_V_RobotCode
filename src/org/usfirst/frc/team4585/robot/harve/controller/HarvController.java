@@ -2,27 +2,25 @@ package org.usfirst.frc.team4585.robot.harve.controller;
 
 import edu.wpi.first.wpilibj.smartdashboard.*;
 import org.usfirst.frc.team4585.robot.harve.model.*;
+import org.usfirst.frc.team4585.robot.harve.model.drive.DefaultDrive;
 import org.usfirst.frc.team4585.robot.harve.model.drive.HarvDrive;
 import org.usfirst.frc.team4585.robot.harve.model.drive.MecanumDrive;
+import org.usfirst.frc.team4585.robot.harve.model.autonomous.*;
 import org.usfirst.frc.team4585.robot.harve.view.*;
-import java.time.Clock;;
+import java.util.Queue;
 
 public class HarvController {
 	HarvDrive drive;
 	HarvInput input;
+	HarvAutoController autonomous;
 	SmartDashboard dashboard;
 	Sensors sensors;
 	
 	final double millisBetweenIterations=20;
 
-	double magX, magY, magRot;
-	double degreesRotated;
-	double rotationAcceleration;
-	double[][] rotationSamples;
-	int currentSample;
-	long changeInTime;
-	double rotLimit;
-	double time;
+	private double magX, magY, magRot;
+	private double rotLimit;
+	private double time;
 	//rotation variables
 	private double rps;
 	private double maxRotationPerIteration;
@@ -30,32 +28,23 @@ public class HarvController {
 	private double intendedAngle;
 	private double angleDifference;
 	private double timeRotating;
+	private double[] pMagRot;
 
 	public HarvController() {
 		millisPerIteration = 20;
 		rps = 1;
 		maxRotationPerIteration = 0;
-		rotationSamples = new double[10][2];
-		currentSample = 0;
-		changeInTime = 0;
 		drive = new MecanumDrive(0, 1, 2, 3);
+//		drive = new DefaultDrive(0,1);
 		input = new HarvInput(0);
+		autonomous = new HarvAutoController();
 		dashboard = new SmartDashboard();
 		sensors = new Sensors();
+		pMagRot = new double[20];
 		time = 0;
 	}
 
-	private void findRotationAcceleration(int iterationTime) {// code for
-																// calibrating
-																// robot
-		if (time + 40 < System.currentTimeMillis() && currentSample < 10) {
-			rotationSamples[currentSample][0] = sensors.getAngle();
-			currentSample += 1;
-			changeInTime += System.currentTimeMillis() - time;
-		}
-	}
-	
-	private void findIntendedDegrees(){//this method tries to get intended degrees close to the actual degrees of the robot
+	private void findIntendedAngle(){//this method tries to get intended degrees close to the actual degrees of the robot
 		final double A = 1;
 		final double B = 2;
 		final double C = 1.1;
@@ -68,27 +57,56 @@ public class HarvController {
 
 	private void augmentedDriveControl() {
 		maxRotationPerIteration = rps * 360 * (millisPerIteration / 1000);
-		final double B = 1.2;
+		final double A = 0.12;
+		final double B = 2;
+		final double C = 0.002;//value to subtract for decelration
 		final double D = 0.008;//scalar for the rotation value to make sure it is below 1
-		final double A = 2;//scalar for how fast the robot turns under user controll
-		final double C = 1.6;
 		final double skewTolerance = 1.8;
 		double rotationValue = Math.abs((angleDifference * D)) + 0.16;
+		double pMagRot = 0;
+		double pMagRotPlaceHolder = 0;
 		magX = input.getJoystickInput(Axis.X);
 		magY = input.getJoystickInput(Axis.Y);
-		rotLimit = 1-(Math.abs(magY)* 0.50);
+		rotLimit = 1-(Math.abs(magY)* 0.70);
 		
 		angleDifference = sensors.getAngle() - intendedAngle;
 		
-		this.findIntendedDegrees();
-		rotationValue = Math.abs((angleDifference * D)) + 0.16;
+		this.findIntendedAngle();
+		rotationValue = Math.abs((angleDifference * D));
 		if(input.getJoystickInput(Axis.Z) < 0|| input.getJoystickInput(Axis.Z) > 0){//detects if there is imput and sets magRot acordingly
-			magRot = (input.getJoystickInput(Axis.Z) * rotLimit);
+			if(angleDifference < 0 - skewTolerance){
+				magRot = input.getJoystickInput(Axis.Z)*rotLimit + Math.abs(rotationValue) * B;
+			}else if(angleDifference > 0 + skewTolerance){
+				magRot = input.getJoystickInput(Axis.Z)*rotLimit - Math.abs(rotationValue) * B;
+			}
+			
+			for(int i = 0; i < this.pMagRot.length; i ++){//
+				if(i == this.pMagRot.length -1) 
+					this.pMagRot[i] = magRot;
+				else
+					this.pMagRot[i] = this.pMagRot[i +1];
+			}
+			
+			pMagRot = this.pMagRot[this.pMagRot.length-1];
 		}	
-		if(angleDifference < 0 - skewTolerance){// corrects based off the intended angle
-			magRot = Math.abs(rotationValue);
-		}else if( angleDifference > 0 + skewTolerance){
-			magRot = -Math.abs(rotationValue);
+		else if(angleDifference < 0 - skewTolerance || angleDifference > 0 + skewTolerance){// corrects based off the intended angle
+			if(angleDifference < 0 -skewTolerance && pMagRot < -A){
+				pMagRot -= C;
+				intendedAngle += pMagRot * maxRotationPerIteration;
+				SmartDashboard.putNumber("pmagRot", pMagRot);
+
+			}else if(angleDifference > 0 + skewTolerance && pMagRot > A){
+				pMagRot -= C;
+				intendedAngle += pMagRot * maxRotationPerIteration;
+				SmartDashboard.putNumber("pmagRot", pMagRot);
+
+			}else{
+				if(angleDifference < 0 -skewTolerance){
+					magRot = Math.abs(rotationValue + A);
+				}else if( angleDifference > 0 + skewTolerance){
+					magRot = -Math.abs(rotationValue + A);
+				}
+			}
 		}else{
 			magRot = 0;
 		}
@@ -106,6 +124,11 @@ public class HarvController {
 		SmartDashboard.putNumber("rotation magnitude", magRot);
 		SmartDashboard.putNumber("time rotating", this.timeRotating);
 		SmartDashboard.putNumber("input rotation", input.getJoystickInput(Axis.Z));
+		SmartDashboard.putNumber("magRot valuesFirst", this.pMagRot[0]);
+		SmartDashboard.putNumber("magRot values1", this.pMagRot[1]);
+		SmartDashboard.putNumber("magRot values2", this.pMagRot[2]);
+		SmartDashboard.putNumber("magRot valuesLast", this.pMagRot[this.pMagRot.length -1]);
+
 	}
 
 	public void robotInit() {
@@ -115,7 +138,7 @@ public class HarvController {
 	}
 
 	public void autonomous() {
-
+		autonomous.start();
 	}
 
 	public void operatorControl() {
