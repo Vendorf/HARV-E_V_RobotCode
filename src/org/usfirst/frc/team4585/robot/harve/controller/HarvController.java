@@ -28,7 +28,8 @@ public class HarvController {
 	private double intendedAngle;
 	private double angleDifference;
 	private double timeRotating;
-	private double[] pMagRot;
+	private double[] pMagRotSamples;
+	private double pMagRot;
 
 	public HarvController() {
 		millisPerIteration = 20;
@@ -40,7 +41,7 @@ public class HarvController {
 		autonomous = new HarvAutoController();
 		dashboard = new SmartDashboard();
 		sensors = new Sensors();
-		pMagRot = new double[20];
+		pMagRotSamples = new double[20];
 		time = 0;
 	}
 
@@ -54,61 +55,89 @@ public class HarvController {
 		else
 			intendedAngle += 0;
 	}
+	
+	private double findIntendedAngle(double inputMag, double A, double B, double C){
+		double angle = 0;
+		double y = (Math.pow(B * C, Math.abs(inputMag))) - A;
+		angle = y * maxRotationPerIteration;
+		return angle;
+	}
 
 	private void augmentedDriveControl() {
 		maxRotationPerIteration = rps * 360 * (millisPerIteration / 1000);
 		final double A = 0.12;
 		final double B = 2;
-		final double C = 0.002;//value to subtract for decelration
+		final double C = 0.076;//value to subtract for decelration
 		final double D = 0.008;//scalar for the rotation value to make sure it is below 1
+		final double E = 2;
 		final double skewTolerance = 1.8;
 		double rotationValue = Math.abs((angleDifference * D)) + 0.16;
-		double pMagRot = 0;
 		double pMagRotPlaceHolder = 0;
 		magX = input.getJoystickInput(Axis.X);
 		magY = input.getJoystickInput(Axis.Y);
-		rotLimit = 1-(Math.abs(magY)* 0.70);
+		rotLimit = 1-(Math.abs(magY));
 		
 		angleDifference = sensors.getAngle() - intendedAngle;
 		
 		this.findIntendedAngle();
 		rotationValue = Math.abs((angleDifference * D));
-		if(input.getJoystickInput(Axis.Z) < 0|| input.getJoystickInput(Axis.Z) > 0){//detects if there is imput and sets magRot acordingly
-			if(angleDifference < 0 - skewTolerance){
-				magRot = input.getJoystickInput(Axis.Z)*rotLimit + Math.abs(rotationValue) * B;
-			}else if(angleDifference > 0 + skewTolerance){
-				magRot = input.getJoystickInput(Axis.Z)*rotLimit - Math.abs(rotationValue) * B;
-			}
+		
+		if(angleDifference > 0 + skewTolerance || angleDifference < 0 - skewTolerance){
 			
-			for(int i = 0; i < this.pMagRot.length; i ++){//
-				if(i == this.pMagRot.length -1) 
-					this.pMagRot[i] = magRot;
-				else
-					this.pMagRot[i] = this.pMagRot[i +1];
-			}
-			
-			pMagRot = this.pMagRot[this.pMagRot.length-1];
-		}	
-		else if(angleDifference < 0 - skewTolerance || angleDifference > 0 + skewTolerance){// corrects based off the intended angle
-			if(angleDifference < 0 -skewTolerance && pMagRot < -A){
-				pMagRot -= C;
-				intendedAngle += pMagRot * maxRotationPerIteration;
-				SmartDashboard.putNumber("pmagRot", pMagRot);
-
-			}else if(angleDifference > 0 + skewTolerance && pMagRot > A){
-				pMagRot -= C;
-				intendedAngle += pMagRot * maxRotationPerIteration;
-				SmartDashboard.putNumber("pmagRot", pMagRot);
-
+			//if there is input that takes priority. keep input vurtual rotation close to actual rotation
+			if(input.getJoystickInput(Axis.Z) > 0 + A|| input.getJoystickInput(Axis.Z) < 0 - A){
+				if(angleDifference > input.getJoystickInput(Axis.Z) * 5){//less than the direction that you are going
+					magRot = (input.getJoystickInput(Axis.Z) - rotationValue);
+				}else if(angleDifference < -input.getJoystickInput(Axis.Z) * 5){
+					magRot = (input.getJoystickInput(Axis.Z) + rotationValue);
+				}else{
+				magRot = input.getJoystickInput(Axis.Z);
+				}
+				
+				//get pMagRot samples while receaving input.
+				pMagRotSamples[pMagRotSamples.length -1] = magRot;
+				//update pMagRot with new samples
+				
+				//find the average of all the samples 
+				pMagRot = 0;
+				for(int i = 0; i < this.pMagRotSamples.length; i ++){
+					pMagRot += pMagRotSamples[i];
+				}
+				pMagRot /= pMagRotSamples.length;
+				
+			//there is not input but rotation is still off a bit, rotate.
 			}else{
-				if(angleDifference < 0 -skewTolerance){
-					magRot = Math.abs(rotationValue + A);
-				}else if( angleDifference > 0 + skewTolerance){
-					magRot = -Math.abs(rotationValue + A);
+				//find if pMagRot is negative or positive
+				if(pMagRot > 0){//pMagRot is positive
+					if(angleDifference > 0){//positive don't need to increase intended angle
+					}
+					else if(angleDifference < 0){//negative
+						pMagRot -= C;
+						intendedAngle += Math.copySign(this.findIntendedAngle(pMagRot, 1, 2, 1.1),pMagRot) * E;
+					}
+				}else if(pMagRot < 0){//pMagRot is negative
+					if(angleDifference > 0){//positive
+						pMagRot += C;
+						intendedAngle += Math.copySign(this.findIntendedAngle(pMagRot, 1, 2, 1.1),pMagRot) * E;
+					}
+					else if(angleDifference < 0){//negative don't need to increase intended angle
+					}	
+				}
+				if(angleDifference > 0){//positive
+					magRot = -(rotationValue + A);
+				}
+				else if(angleDifference < 0){//negative
+					magRot = (rotationValue + A);
 				}
 			}
-		}else{
+		}else
 			magRot = 0;
+		
+		SmartDashboard.putNumber("pMagRot", pMagRot);
+		//assign preveous magnitudes to an array for later use
+		for(int i = 0; i < this.pMagRotSamples.length; i ++){//move every value down the array
+			if(i != this.pMagRotSamples.length -1)
+				this.pMagRotSamples[i] = this.pMagRotSamples[i +1];
 		}
 	}
 
@@ -124,10 +153,10 @@ public class HarvController {
 		SmartDashboard.putNumber("rotation magnitude", magRot);
 		SmartDashboard.putNumber("time rotating", this.timeRotating);
 		SmartDashboard.putNumber("input rotation", input.getJoystickInput(Axis.Z));
-		SmartDashboard.putNumber("magRot valuesFirst", this.pMagRot[0]);
-		SmartDashboard.putNumber("magRot values1", this.pMagRot[1]);
-		SmartDashboard.putNumber("magRot values2", this.pMagRot[2]);
-		SmartDashboard.putNumber("magRot valuesLast", this.pMagRot[this.pMagRot.length -1]);
+		SmartDashboard.putNumber("magRot valuesLast", this.pMagRotSamples[0]);
+		SmartDashboard.putNumber("magRot values1", this.pMagRotSamples[1]);
+		SmartDashboard.putNumber("magRot values2", this.pMagRotSamples[2]);
+		SmartDashboard.putNumber("magRot valuesFirst", this.pMagRotSamples[this.pMagRotSamples.length -1]);
 
 	}
 
@@ -142,7 +171,7 @@ public class HarvController {
 	}
 
 	public void operatorControl() {
-
+		
 		if (System.currentTimeMillis() >= time + millisPerIteration) {
 			input.update();
 			this.augmentedDriveControl();
