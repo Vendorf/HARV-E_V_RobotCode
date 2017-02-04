@@ -32,7 +32,7 @@ public class HarvController {
 	private double pMagRot;
 
 	public HarvController() {
-		millisPerIteration = 20;
+		millisPerIteration = 10;
 		rps = 1;
 		maxRotationPerIteration = 0;
 		drive = new MecanumDrive(0, 1, 2, 3);
@@ -41,7 +41,7 @@ public class HarvController {
 		autonomous = new HarvAutoController();
 		dashboard = new SmartDashboard();
 		sensors = new Sensors();
-		pMagRotSamples = new double[20];
+		pMagRotSamples = new double[10];
 		time = 0;
 	}
 
@@ -49,9 +49,10 @@ public class HarvController {
 		final double A = 1;
 		final double B = 2;
 		final double C = 1.1;
+		final double D = 1.5;
 		double y = (Math.pow(B * C,Math.abs(input.getJoystickInput(Axis.Z))) - A);
 		if(y >0 + 0.111)
-			intendedAngle += Math.copySign(y, input.getJoystickInput(Axis.Z)) * this.maxRotationPerIteration;//exponent curve close to robots acceleration
+			intendedAngle += Math.copySign(y, input.getJoystickInput(Axis.Z)) * this.maxRotationPerIteration * D;//exponent curve close to robots acceleration
 		else
 			intendedAngle += 0;
 	}
@@ -69,7 +70,7 @@ public class HarvController {
 		final double B = 2;
 		final double C = 0.076;//value to subtract for decelration
 		final double D = 0.008;//scalar for the rotation value to make sure it is below 1
-		final double E = 2;
+		final double E = 5;
 		final double skewTolerance = 1.8;
 		double rotationValue = Math.abs((angleDifference * D)) + 0.16;
 		double pMagRotPlaceHolder = 0;
@@ -108,25 +109,37 @@ public class HarvController {
 			//there is not input but rotation is still off a bit, rotate.
 			}else{
 				//find if pMagRot is negative or positive
-				if(pMagRot > 0){//pMagRot is positive
-					if(angleDifference > 0){//positive don't need to increase intended angle
-					}
-					else if(angleDifference < 0){//negative
-						pMagRot -= C;
-						intendedAngle += Math.copySign(this.findIntendedAngle(pMagRot, 1, 2, 1.1),pMagRot) * E;
-					}
-				}else if(pMagRot < 0){//pMagRot is negative
-					if(angleDifference > 0){//positive
-						pMagRot += C;
-						intendedAngle += Math.copySign(this.findIntendedAngle(pMagRot, 1, 2, 1.1),pMagRot) * E;
-					}
-					else if(angleDifference < 0){//negative don't need to increase intended angle
-					}	
-				}
+//				if(pMagRot > 0){//pMagRot is positive
+//					if(angleDifference > 0){//positive don't need to increase intended angle
+//					}
+//					else if(angleDifference < 0){//negative
+//						pMagRot -= pMagRot * 0.90;
+//						intendedAngle += Math.copySign(this.findIntendedAngle(pMagRot, 1, 2, 1.1),pMagRot) * E;
+//						magRot = 0;
+//					}
+//				}else if(pMagRot < 0){//pMagRot is negative
+//					if(angleDifference > 0){//positive
+//						pMagRot -= pMagRot * 0.90;
+//						intendedAngle += Math.copySign(this.findIntendedAngle(pMagRot, 1, 2, 1.1),pMagRot) * E;
+//						magRot = 0;
+//					}
+//					else if(angleDifference < 0){//negative don't need to increase intended angle
+//					}	
+//				}
 				if(angleDifference > 0){//positive
+					if(pMagRot < 0){
+						pMagRot -= pMagRot * .9;
+						intendedAngle += Math.copySign(this.findIntendedAngle(pMagRot, 1, 2, 1.1),pMagRot) * E;
+						magRot = pMagRot * .5;
+					}
 					magRot = -(rotationValue + A);
 				}
 				else if(angleDifference < 0){//negative
+					if(pMagRot > 0){
+						pMagRot -= pMagRot * .9;
+						intendedAngle += Math.copySign(this.findIntendedAngle(pMagRot, 1, 2, 1.1),pMagRot) * E;
+						magRot = pMagRot * 0.5;
+					}
 					magRot = (rotationValue + A);
 				}
 			}

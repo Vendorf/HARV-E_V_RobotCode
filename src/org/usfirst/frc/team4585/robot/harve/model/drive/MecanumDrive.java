@@ -30,6 +30,9 @@ public class MecanumDrive extends HarvDrive{
 		else this.setMagY(magY);
 		if(magRot > 1) this.setMagRot(1);
 		else this.setMagRot(magRot);
+		this.setMagRot(this.getMagRot() * this.getMaxMagRot());
+		this.setMagX(this.getMagX() * this.getMaxMagX());
+		this.setMagY(this.getMagY() * this.getMaxMagY());
 		
 		this.wheelMotors[FRONTLEFT].set(this.getMagY() - this.getMagX()- this.getMagRot());
 		this.wheelMotors[BACKLEFT].set(this.getMagY() + this.getMagX()  - this.getMagRot());

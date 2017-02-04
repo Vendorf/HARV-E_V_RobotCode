@@ -4,12 +4,18 @@ public abstract class HarvDrive {
 	private double magX;
 	private double magY;
 	private double magRot;
-	public double wheelSize;
-	public double speed;
+	private double wheelSize;
+	private double speed;
+	private double maxMagRot;
+	private double maxMagX;
+	private double maxMagY;
 	public HarvDrive(){//default constructor
 		magX = 0;
 		magY = 0;
 		magRot = 0;
+		maxMagRot = 1;
+		maxMagX = 1;
+		maxMagY = 1;
 	}
 	
 	abstract public void update(double magX, double magY, double magRot);
@@ -51,6 +57,30 @@ public abstract class HarvDrive {
 	
 	protected void setMagRot(double magRot){
 		this.magRot = magRot;
+	}
+
+	public double getMaxMagRot() {
+		return maxMagRot;
+	}
+
+	public void setMaxMagRot(double maxMagRot) {
+		this.maxMagRot = maxMagRot;
+	}
+
+	public double getMaxMagX() {
+		return maxMagX;
+	}
+
+	public void setMaxMagX(double maxMagX) {
+		this.maxMagX = maxMagX;
+	}
+
+	public double getMaxMagY() {
+		return maxMagY;
+	}
+
+	public void setMaxMagY(double maxMagY) {
+		this.maxMagY = maxMagY;
 	}
 	
 }
